@@ -1,0 +1,6 @@
+{
+  "name": "RetailPulse",
+  "description": "Retail electronics employee management, attendance with geofencing & live selfie, customer walk-in pipeline, sales tracking, and multi-branch analytics for owners and branch managers.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

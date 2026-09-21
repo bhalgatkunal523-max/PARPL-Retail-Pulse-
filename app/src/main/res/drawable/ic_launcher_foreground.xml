@@ -1,0 +1,40 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center safe zone: 66dp within 108dp (bounds 21..87) -->
+    <!-- Storefront roof / smart device card -->
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M30,38 L54,26 L78,38 L78,43 L30,43 Z" />
+    
+    <!-- Store Pillars / Retail Base -->
+    <path
+        android:fillColor="#E0F2FE"
+        android:pathData="M33,45 L40,45 L40,74 L33,74 Z M68,45 L75,45 L75,74 L68,74 Z" />
+
+    <!-- Center ID / Employee Card Badge -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M43,45 L65,45 C67.2,45 69,46.8 69,49 L69,76 C69,78.2 67.2,80 65,80 L43,80 C40.8,80 39,78.2 39,76 L39,49 C39,46.8 40.8,45 43,45 Z" />
+
+    <!-- ID Card Lanyard slot / chip -->
+    <path
+        android:fillColor="#0284C7"
+        android:pathData="M49,48 L59,48 C59.6,48 60,48.4 60,49 L60,51 C60,51.6 59.6,52 59,52 L49,52 C48.4,52 48,51.6 48,51 L48,49 C48,48.4 48.4,48 49,48 Z" />
+
+    <!-- Pulse checkmark in center of badge -->
+    <path
+        android:strokeColor="#059669"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M45,64 L51,70 L63,57" />
+
+    <!-- Electronics star / beacon dot -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M54,22 C55.1,22 56,22.9 56,24 C56,25.1 55.1,26 54,26 C52.9,26 52,25.1 52,24 C52,22.9 52.9,22 54,22 Z" />
+</vector>

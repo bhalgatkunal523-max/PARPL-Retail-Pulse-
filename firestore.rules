@@ -1,0 +1,146 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isOwner() {
+      return isAuthenticated() && (
+        request.auth.token.role == 'OWNER' ||
+        getUserData().role == 'OWNER'
+      );
+    }
+
+    function isBranchManager(branchId) {
+      return isAuthenticated() && (
+        (request.auth.token.role == 'BRANCH_MANAGER' && request.auth.token.branchId == branchId) ||
+        (getUserData().role == 'BRANCH_MANAGER' && getUserData().branchId == branchId)
+      );
+    }
+
+    function isEmployee(employeeId, branchId) {
+      return isAuthenticated() && (
+        (getUserData().employeeId == employeeId && getUserData().branchId == branchId) ||
+        (request.auth.uid == employeeId && getUserData().branchId == branchId)
+      );
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      // Only owner can update roles/branches or create users
+      allow create, delete: if isOwner();
+      allow update: if isOwner() || (
+        request.auth.uid == userId && 
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'branchId', 'employeeId', 'active'])
+      );
+    }
+
+    // 2. Branches collection
+    match /branches/{branchId} {
+      allow read: if isAuthenticated();
+      // Only owner can add, edit or configure branches
+      allow write: if isOwner();
+    }
+
+    // 3. Attendance collection
+    match /attendance/{attendanceId} {
+      // Owner can read all; Manager can read their branch; Employee can read only their own
+      allow read: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      // Create: Employee can only create their own record for their assigned branch
+      allow create: if isAuthenticated() && 
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.branchId == getUserData().branchId &&
+        request.resource.data.timestamp == request.time; // Trusted server timestamp
+
+      // Immutable: No edits or deletes allowed by anyone directly.
+      // Corrections must be submitted to correctionRequests.
+      allow update, delete: if false;
+    }
+
+    // 4. Walk-Ins / Customer Leads collection
+    match /walkIns/{walkInId} {
+      allow read: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.branchId == getUserData().branchId;
+
+      allow update: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid &&
+         request.resource.data.branchId == resource.data.branchId &&
+         request.resource.data.employeeId == resource.data.employeeId);
+
+      allow delete: if isOwner(); // Soft delete preferred
+    }
+
+    // 5. Follow-ups collection
+    match /followUps/{followUpId} {
+      allow read: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.branchId == getUserData().branchId;
+
+      allow update: if isOwner() || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      allow delete: if isOwner();
+    }
+
+    // 6. Sales collection
+    match /sales/{saleId} {
+      allow read: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.branchId == getUserData().branchId &&
+        request.resource.data.billAmount > 0 &&
+        request.resource.data.invoiceNumber.size() > 0;
+
+      // Sales cannot be freely overwritten or deleted. Corrections must go through correctionRequests.
+      allow update, delete: if isOwner();
+    }
+
+    // 7. Correction Requests collection
+    match /correctionRequests/{requestId} {
+      allow read: if isOwner() || 
+        isBranchManager(resource.data.branchId) || 
+        (isAuthenticated() && resource.data.employeeId == request.auth.uid);
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.employeeId == request.auth.uid &&
+        request.resource.data.branchId == getUserData().branchId;
+
+      allow update: if isOwner() || isBranchManager(resource.data.branchId);
+
+      allow delete: if isOwner();
+    }
+
+    // 8. Audit Logs collection
+    match /auditLogs/{logId} {
+      allow read: if isOwner() || 
+        (isAuthenticated() && getUserData().role == 'BRANCH_MANAGER' && resource.data.branchId == getUserData().branchId);
+      // Append only
+      allow create: if isAuthenticated();
+      allow update, delete: if false; // Append-only immutable logs
+    }
+  }
+}
